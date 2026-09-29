@@ -1,0 +1,94 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Single Doctor Account (No public registration)
+model User {
+  id             String   @id @default(uuid())
+  email          String   @unique
+  passwordHash   String
+  name           String   @default("Doctor")
+  phone          String?  @default("")
+  specialization String   @default("Bovine Artificial Insemination Specialist")
+  role           String   @default("DOCTOR")
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// Core Entity: Farmer-first
+model Farmer {
+  id            String                @id @default(uuid())
+  clientId      String?               @unique
+  name          String
+  mobile        String                @unique
+  cowsOwned     Int                   @default(0) // manual count or auto-tallied
+  village       String?
+  notes         String?
+  cows          Cow[]
+  inseminations InseminationRecord[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+// Cattle registered under a specific farmer
+model Cow {
+  id              String   @id @default(uuid())
+  farmerId        String
+  farmer          Farmer   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  tagNumber       String?  @unique
+  name            String?
+  breed           String   @default("Gir")
+  gender          String   @default("Female")
+  dob             String?
+  age             Int?
+  purpose         String?  @default("Dairy")
+  lactationNumber Int?     @default(1)
+  color           String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Insemination Record + WhatsApp Receipt
+model InseminationRecord {
+  id                String    @id @default(uuid())
+  clientId          String?   @unique
+  receiptNumber     String    @unique
+  farmerId          String
+  farmer            Farmer    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  farmerName        String
+  farmerMobile      String
+  doctorName        String
+  date              String    // YYYY-MM-DD
+  time              String    // HH:mm
+  cowCount          Int       @default(1)
+  cowTags           String?   // optional comma-separated ear tags
+  strawCode         String?   // Semen straw batch or bull breed info
+  notes             String?
+  whatsappStatus    String    @default("pending") // "sent", "failed", "pending", "sandbox_not_joined"
+  whatsappMessageId String?
+  whatsappError     String?
+  whatsappSentAt    DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+// Clinic and Receipt Header Settings
+model ClinicSetting {
+  id         String   @id @default("default")
+  clinicName String   @default("VetAssist Cattle AI Clinic")
+  address    String?  @default("")
+  phone      String?  @default("")
+  email      String?  @default("doctor@vetassist.com")
+  website    String?  @default("")
+  currency   String   @default("INR")
+  theme      String   @default("light")
+  doctorName String?  @default("Doctor")
+  updatedAt  DateTime @updatedAt
+}
