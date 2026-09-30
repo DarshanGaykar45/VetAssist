@@ -1,6 +1,36 @@
 import { PrismaClient } from '@prisma/client';
 
 /**
+ * Sanitizes PostgreSQL connection strings for Neon pooled connections.
+ * Strips channel_binding which causes Prisma P1001 on proxies,
+ * ensures sslmode=require and connect_timeout=30 for serverless wakeups.
+ */
+export function sanitizeDatabaseUrl(url = process.env.DATABASE_URL) {
+  if (!url) return url;
+  if (url.startsWith('postgresql://') || url.startsWith('postgres://')) {
+    try {
+      const parsed = new URL(url);
+      parsed.searchParams.delete('channel_binding');
+      if (!parsed.searchParams.has('sslmode')) {
+        parsed.searchParams.set('sslmode', 'require');
+      }
+      if (!parsed.searchParams.has('connect_timeout')) {
+        parsed.searchParams.set('connect_timeout', '30');
+      }
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
+const activeDbUrl = sanitizeDatabaseUrl();
+if (activeDbUrl) {
+  process.env.DATABASE_URL = activeDbUrl;
+}
+
+/**
  * Security check for database connection strings.
  * Validates credentials for PostgreSQL (Neon) and remote databases.
  */
@@ -31,6 +61,7 @@ const globalForPrisma = globalThis;
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
+    datasourceUrl: activeDbUrl,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 
