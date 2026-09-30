@@ -139,11 +139,14 @@ app.get('/api/db-check', async (req, res) => {
       maskedUrl,
     });
   } catch (err) {
+    const rawUrl = process.env.DATABASE_URL || '';
+    const maskedUrl = rawUrl ? rawUrl.replace(/:([^@]+)@/, ':****@') : 'NOT_SET';
     res.status(500).json({
       status: 'error',
       name: err.name,
       message: err.message,
       databaseUrlConfigured: Boolean(process.env.DATABASE_URL),
+      maskedUrl,
     });
   }
 });
