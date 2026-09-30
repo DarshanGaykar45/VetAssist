@@ -70,6 +70,51 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// Root endpoint - friendly landing page for browser visits
+app.get('/', (req, res) => {
+  if (req.accepts('html')) {
+    return res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VetAssist API — Status</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 36px; max-width: 520px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.4); text-align: center; }
+    .badge { display: inline-block; background: #059669; color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; padding: 6px 14px; border-radius: 9999px; margin-bottom: 20px; text-transform: uppercase; }
+    h1 { font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #ffffff; }
+    p { color: #94a3b8; font-size: 15px; line-height: 1.6; margin-bottom: 24px; }
+    .note { background: #0f172a; border-left: 4px solid #3b82f6; padding: 12px 16px; text-align: left; border-radius: 6px; margin-bottom: 24px; font-size: 13px; color: #cbd5e1; }
+    .btn { display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+    .btn:hover { background: #1d4ed8; }
+    .footer { margin-top: 24px; font-size: 12px; color: #64748b; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">● Backend API Active & Online</div>
+    <h1>🐄 VetAssist Cattle AI Clinic</h1>
+    <p>This is the <strong>Backend REST API service</strong> running on Render.</p>
+    <div class="note">
+      💡 <strong>Looking for the VetAssist Web App?</strong><br>
+      The user interface runs on the <strong>Frontend (Vercel)</strong>. Please open your Vercel deployment URL to access the Doctor Login, Dashboard, Farmers, and WhatsApp Receipts.
+    </div>
+    <a class="btn" href="/api/health">Check API Health (/api/health)</a>
+    <div class="footer">VetAssist Cattle Insemination Clinic Management System • v2.0.0</div>
+  </div>
+</body>
+</html>`);
+  }
+  res.json({
+    status: 'ok',
+    service: 'VetAssist Cattle Insemination Clinic API',
+    version: '2.0.0',
+    message: 'Backend API is active. Access the user interface via the Vercel frontend URL.',
+  });
+});
+
 // Health check endpoint (always accessible, exempt from rate limiting)
 app.get('/api/health', (req, res) => {
   res.json({
