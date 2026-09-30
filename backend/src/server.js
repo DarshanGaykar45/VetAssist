@@ -29,22 +29,28 @@ app.use(
   })
 );
 
-// Strict CORS configuration - Only allow explicit frontend origins, never wildcard *
-const allowedOrigins = [
+// Strict CORS configuration - Support CLIENT_ORIGIN, FRONTEND_URL, Vercel deployments, and localhost
+const configuredOrigins = [
   process.env.CLIENT_ORIGIN,
+  process.env.FRONTEND_URL,
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
-].filter(Boolean);
+]
+  .filter(Boolean)
+  .map((url) => url.replace(/\/+$/, ''));
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (e.g. mobile apps, curl, local scripts)
       if (!origin) return callback(null, true);
-      // Allow any localhost or 127.0.0.1 port (e.g. Vite on 5173, 5174, 5175, etc.)
-      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
-      if (isLocalhost || allowedOrigins.includes(origin)) {
+
+      const cleanOrigin = origin.replace(/\/+$/, '');
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
+      const isVercel = /^https:\/\/[a-z0-9\-.]+\.vercel\.app$/.test(cleanOrigin);
+
+      if (isLocalhost || isVercel || configuredOrigins.includes(cleanOrigin)) {
         return callback(null, true);
       }
       return callback(new Error(`CORS policy violation: Origin '${origin}' is not authorized.`));

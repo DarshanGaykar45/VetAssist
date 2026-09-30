@@ -5,8 +5,13 @@
 
 const TOKEN_KEY = 'vetassist_jwt_token';
 
-// Base URL from environment — uses direct connection to backend (more reliable than Vite proxy)
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+// Base URL from environment — supports both VITE_API_BASE_URL and VITE_API_URL, strips trailing slashes/api
+const rawApiBase = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '';
+let cleanApiBase = rawApiBase ? rawApiBase.replace(/\/+$/, '') : '';
+if (cleanApiBase.endsWith('/api')) {
+  cleanApiBase = cleanApiBase.slice(0, -4);
+}
+const API_BASE = cleanApiBase;
 
 // In-memory token cache
 let inMemoryToken = null;

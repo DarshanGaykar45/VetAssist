@@ -28,6 +28,14 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  // Handle CORS policy violations cleanly
+  if (err.message && err.message.includes('CORS policy violation')) {
+    return res.status(403).json({
+      success: false,
+      message: err.message,
+    });
+  }
+
   // Default internal server error - never leak stack traces, database error messages, or file paths
   const statusCode = err.statusCode || 500;
   
