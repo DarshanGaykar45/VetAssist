@@ -1,4 +1,15 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Automatic fallback to bundled SQLite database if DATABASE_URL is not set in environment
+if (!process.env.DATABASE_URL) {
+  const defaultDbPath = path.resolve(__dirname, '../../database/vetassist.db').replace(/\\/g, '/');
+  process.env.DATABASE_URL = `file:${defaultDbPath}`;
+}
 
 /**
  * Security check for database connection strings.
@@ -46,6 +57,7 @@ const globalForPrisma = globalThis;
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 

@@ -4,6 +4,7 @@
   "private": true,
   "description": "VetAssist — Cattle Artificial Insemination (AI) Clinic Management System",
   "scripts": {
+    "start": "node backend/src/server.js",
     "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm run dev",
