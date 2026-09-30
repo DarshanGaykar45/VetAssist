@@ -20,6 +20,8 @@
     "test:all": "node scripts/verify-all.js"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "^6.19.3",
     "@prisma/client": "^6.4.1",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
@@ -29,6 +31,7 @@
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "ws": "^8.22.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

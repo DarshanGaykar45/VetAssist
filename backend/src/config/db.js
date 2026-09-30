@@ -1,28 +1,33 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaNeon } from '@prisma/adapter-neon';
+import { neonConfig } from '@neondatabase/serverless';
+import ws from 'ws';
+
+neonConfig.webSocketConstructor = ws;
 
 /**
- * Sanitizes PostgreSQL connection strings for Neon pooled connections.
- * Strips channel_binding which causes Prisma P1001 on proxies,
- * ensures sslmode=require and connect_timeout=30 for serverless wakeups.
+ * Sanitizes PostgreSQL connection strings for Neon connections.
+ * Strips surrounding quotes, strips channel_binding, ensures sslmode=require.
  */
 export function sanitizeDatabaseUrl(url = process.env.DATABASE_URL) {
   if (!url) return url;
-  if (url.startsWith('postgresql://') || url.startsWith('postgres://')) {
+  let clean = url.trim();
+  if ((clean.startsWith('"') && clean.endsWith('"')) || (clean.startsWith("'") && clean.endsWith("'"))) {
+    clean = clean.slice(1, -1).trim();
+  }
+  if (clean.startsWith('postgresql://') || clean.startsWith('postgres://')) {
     try {
-      const parsed = new URL(url);
+      const parsed = new URL(clean);
       parsed.searchParams.delete('channel_binding');
       if (!parsed.searchParams.has('sslmode')) {
         parsed.searchParams.set('sslmode', 'require');
       }
-      if (!parsed.searchParams.has('connect_timeout')) {
-        parsed.searchParams.set('connect_timeout', '30');
-      }
       return parsed.toString();
     } catch {
-      return url;
+      return clean;
     }
   }
-  return url;
+  return clean;
 }
 
 const activeDbUrl = sanitizeDatabaseUrl();
@@ -58,12 +63,22 @@ validateDatabaseSecurity();
 
 const globalForPrisma = globalThis;
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
+function createPrismaClient() {
+  if (activeDbUrl && (activeDbUrl.startsWith('postgresql://') || activeDbUrl.startsWith('postgres://'))) {
+    const adapter = new PrismaNeon({ connectionString: activeDbUrl });
+    return new PrismaClient({
+      adapter,
+      log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+    });
+  }
+
+  return new PrismaClient({
     datasourceUrl: activeDbUrl,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
+}
+
+export const prisma = globalForPrisma.prisma || createPrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
