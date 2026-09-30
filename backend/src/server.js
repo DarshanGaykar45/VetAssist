@@ -17,6 +17,7 @@ import inseminationRoutes from './routes/insemination.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import prisma from './config/db.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -123,6 +124,28 @@ app.get('/api/health', (req, res) => {
     version: '2.0.0',
     timestamp: new Date().toISOString(),
   });
+});
+
+// Database connectivity check endpoint (exempt from rate limiting)
+app.get('/api/db-check', async (req, res) => {
+  try {
+    const rawUrl = process.env.DATABASE_URL || '';
+    const maskedUrl = rawUrl ? rawUrl.replace(/:([^@]+)@/, ':****@') : 'NOT_SET';
+    const userCount = await prisma.user.count();
+    res.json({
+      status: 'connected',
+      userCount,
+      databaseUrlConfigured: Boolean(rawUrl),
+      maskedUrl,
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: 'error',
+      name: err.name,
+      message: err.message,
+      databaseUrlConfigured: Boolean(process.env.DATABASE_URL),
+    });
+  }
 });
 
 // Rate limiting on all API routes

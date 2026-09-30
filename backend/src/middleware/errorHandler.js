@@ -48,11 +48,11 @@ export function errorHandler(err, req, res, next) {
   // Default internal server error - never leak stack traces, database error messages, or file paths
   const statusCode = err.statusCode || 500;
   
-  // Safe user-facing message
-  let clientMessage = 'An unexpected server error occurred. Please try again later.';
-  if (err.isOperational && err.message) {
-    // Strip any possible filesystem paths from operational messages
-    clientMessage = err.message.replace(/[A-Za-z]:\\[^ \n\r\t]+/g, '[path]').replace(/\/[a-zA-Z0-9_\-\./]+/g, '[path]');
+  // User-facing message
+  let clientMessage = err.message || 'An unexpected server error occurred. Please try again later.';
+  if (err.message) {
+    // Strip any possible filesystem paths
+    clientMessage = err.message.replace(/[A-Za-z]:\\[^ \n\r\t]+/g, '[path]').replace(/\/[a-zA-Z0-9_\-\./]+/g, '[path]').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
   res.status(statusCode).json({
