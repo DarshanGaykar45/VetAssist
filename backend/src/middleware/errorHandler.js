@@ -38,9 +38,10 @@ export function errorHandler(err, req, res, next) {
 
   // Handle Database connection / configuration errors with a clear message
   if (err.message && (err.message.includes('DATABASE_URL') || err.message.includes('datasource') || err.name === 'PrismaClientInitializationError')) {
+    const cleanMsg = err.message.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
     return res.status(500).json({
       success: false,
-      message: `Database configuration error: ${err.message.split('\n')[0]}`,
+      message: `Database error: ${cleanMsg}`,
     });
   }
 
