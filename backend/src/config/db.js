@@ -1,20 +1,8 @@
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Automatic fallback to bundled SQLite database if DATABASE_URL is not set in environment
-if (!process.env.DATABASE_URL) {
-  const defaultDbPath = path.resolve(__dirname, '../../database/vetassist.db').replace(/\\/g, '/');
-  process.env.DATABASE_URL = `file:${defaultDbPath}`;
-}
 
 /**
  * Security check for database connection strings.
- * If deployed beyond localhost or using remote databases (MongoDB, PostgreSQL, MySQL),
- * confirms authentication credentials are present in the connection string.
+ * Validates credentials for PostgreSQL (Neon) and remote databases.
  */
 export function validateDatabaseSecurity(url = process.env.DATABASE_URL) {
   if (!url) {
@@ -22,28 +10,14 @@ export function validateDatabaseSecurity(url = process.env.DATABASE_URL) {
     return { secure: false, message: 'DATABASE_URL is missing' };
   }
 
-  // Check MongoDB connection strings
-  if (url.startsWith('mongodb://') || url.startsWith('mongodb+srv://')) {
+  // Check PostgreSQL connection strings
+  if (url.startsWith('postgresql://') || url.startsWith('postgres://')) {
     const isLocalhost = url.includes('localhost') || url.includes('127.0.0.1');
-    const hasAuth = url.includes('@') && !url.match(/mongodb(\+srv)?:\/\/:?@/);
-
-    if (!hasAuth) {
-      if (isLocalhost) {
-        console.warn('⚠️ [DB Security Warning]: Local MongoDB connection has no authentication credentials.');
-      } else {
-        console.error('🚨 [DB Security Critical]: Remote MongoDB instance requires authentication credentials! Do not expose unauthenticated databases in production.');
-        if (process.env.NODE_ENV === 'production') {
-          throw new Error('Database authentication required: Remote MongoDB connection string lacks user credentials.');
-        }
-      }
-      return { secure: false, type: 'mongodb', authenticated: false };
+    const hasAuth = url.includes('@');
+    if (!hasAuth && !isLocalhost) {
+      console.warn('⚠️ [DB Security Warning]: Remote PostgreSQL connection has no authentication credentials.');
     }
-    return { secure: true, type: 'mongodb', authenticated: true };
-  }
-
-  // SQLite local file database
-  if (url.startsWith('file:')) {
-    return { secure: true, type: 'sqlite', local: true };
+    return { secure: true, type: 'postgresql', authenticated: hasAuth };
   }
 
   return { secure: true, type: 'relational' };
@@ -57,7 +31,6 @@ const globalForPrisma = globalThis;
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL,
     log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
   });
 
