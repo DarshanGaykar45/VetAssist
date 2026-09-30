@@ -36,6 +36,14 @@ export function errorHandler(err, req, res, next) {
     });
   }
 
+  // Handle Database connection / configuration errors with a clear message
+  if (err.message && (err.message.includes('DATABASE_URL') || err.message.includes('datasource') || err.name === 'PrismaClientInitializationError')) {
+    return res.status(500).json({
+      success: false,
+      message: `Database configuration error: ${err.message.split('\n')[0]}`,
+    });
+  }
+
   // Default internal server error - never leak stack traces, database error messages, or file paths
   const statusCode = err.statusCode || 500;
   
